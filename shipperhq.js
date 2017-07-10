@@ -102,7 +102,8 @@ ShipperHQ.prototype.request = function(method, url, data, callback) {
     req = http.request(options, function(res) {
       res.setEncoding('utf8');
       res.on('data', function (chunk) {
-        callback(null, chunk);
+        let obj = JSON.parse(chunk);
+        callback(null, obj);
       });
     });
 
@@ -118,7 +119,8 @@ ShipperHQ.prototype.request = function(method, url, data, callback) {
       req = http.request(options, function(res) {
         res.setEncoding('utf8');
         res.on('data', function (chunk) {
-          resolve(chunk);
+          let obj = JSON.parse(chunk);
+          resolve(obj);
         });
       });
 
@@ -142,6 +144,7 @@ ShipperHQ.prototype.getMethods = function(callback) {
   obj.credentials = this.params.credentials;
   obj.siteDetails = this.params.siteDetails;
 
+  console.log('request = ' + JSON.stringify(obj, null, 2));
   var url = '/' + this.params.defaultVersion + '/allowed_methods';
   return this.request('post', url, obj, callback);
 };
