@@ -12,7 +12,7 @@ npm install shipperhq-client
 ### initialize
 
 ```
-var client = new ShipperHQ(
+var shipperhq = new ShipperHQ(
   'API KEY', 
   'password'
 );
@@ -21,7 +21,7 @@ var client = new ShipperHQ(
 ### with Promises
 
 ```
-client.getCartRates(data)
+shipperhq.getCartRates(data)
   .then (function (response) {
     console.log('response = ' + response);
   },
@@ -31,7 +31,7 @@ client.getCartRates(data)
 ```
 Or:
 ```
-client.getMethods()
+shipperhq.getMethods()
   .then(function (response) {
     console.log('response = ' + response);
   },
@@ -42,7 +42,7 @@ client.getMethods()
 
 ### with Callbacks
 ```
-client.getCartRates(data, function(err, response) {
+shipperhq.getCartRates(data, function(err, response) {
   if (err) {
     console.log(err);
     return;
@@ -52,7 +52,7 @@ client.getCartRates(data, function(err, response) {
 ```
 Or:
 ```  
-client.getMethods(function(err, response) {
+shipperhq.getMethods(function(err, response) {
   if (err) {
     console.log(err);
     return;
