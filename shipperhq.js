@@ -89,6 +89,11 @@ ShipperHQ.prototype.init = function(apiKey, password, options) {
  */
 ShipperHQ.prototype.request = function(method, url, data, callback) {
 
+  if (typeof data === 'function') {
+    callback = data;
+    data = null;
+  }
+
   var options = {
     host: this.params.host,
     port: this.params.port,
@@ -96,16 +101,26 @@ ShipperHQ.prototype.request = function(method, url, data, callback) {
     method: method,
     headers: {'Content-Type': 'application/json'}
   };
+  var promisesReq = this.promisifyData(data);
+  if (promisesReq.length) {
+    return Promise.all(promisesReq).bind(this).then(function() {
+      this.request(method, url, data, callback);
+    });
+  }
+  
   var req;
 
   if (callback) {
-    req = http.request(options, function(res) {
-      res.setEncoding('utf8');
-      res.on('data', function (chunk) {
-        let obj = JSON.parse(chunk);
-        callback(null, obj);
+    req = http.request(options, 
+      function(res) {
+        var response = '';
+        res.on('data', function (chunk) {
+          response += chunk;
+        });
+        res.on('end', function() {
+          callback(null, JSON.parse(response));
+        });
       });
-    });
 
     req.on('error', function(e) {
       callback(e.message);
@@ -117,10 +132,12 @@ ShipperHQ.prototype.request = function(method, url, data, callback) {
   else {
     return new Promise(function (resolve, reject) {
       req = http.request(options, function(res) {
-        res.setEncoding('utf8');
+        var response = '';
         res.on('data', function (chunk) {
-          let obj = JSON.parse(chunk);
-          resolve(obj);
+          response += chunk;
+        });
+        res.on('end', function() {
+          resolve(JSON.parse(response));
         });
       });
 
@@ -135,6 +152,47 @@ ShipperHQ.prototype.request = function(method, url, data, callback) {
 };
 
 /**
+ * Resolve and return promises array from data
+ * Only resolve top level object keys
+ *
+ * @param  object data
+ * @return array
+ */
+ShipperHQ.prototype.promisifyData = function(data) {
+
+  if (!data) {
+    return [];
+  }
+
+  function thenResolvePromisedValue(data, key) {
+    data[key].then(function(val) {
+      data[key] = val;
+    });
+  }
+
+  var promises = [];
+  if (typeof data === 'object') {
+    var keys = Object.keys(data);
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i];
+      if (data[key] && data[key].then) {
+        promises.push(data[key]);
+        thenResolvePromisedValue(data, key);
+      }
+    }
+  } else if (data instanceof Array) {
+    for (var i = 0; i < data.length; i++) {
+      if (data[i] && data[i].then) {
+        promises.push(data[i]);
+        thenResolvePromisedValue(data, i);
+      }
+    }
+  }
+
+  return promises;
+};
+
+/**
  * ShipperHQ getMethods
  *
  * @param function callback (optional if using promises)
@@ -144,7 +202,6 @@ ShipperHQ.prototype.getMethods = function(callback) {
   obj.credentials = this.params.credentials;
   obj.siteDetails = this.params.siteDetails;
 
-  console.log('request = ' + JSON.stringify(obj, null, 2));
   var url = '/' + this.params.defaultVersion + '/allowed_methods';
   return this.request('post', url, obj, callback);
 };
