@@ -1,5 +1,3 @@
-This package is in beta.
-
 # shipperhq-client
 Access ShipperHQ API
 
